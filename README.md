@@ -1,8 +1,10 @@
 # The Omega seed-chain bootstrap challenge
 
 Rebuild the Omega compiler from 408 hand-written bytes on your own machine, and check that every rung
-comes out byte for byte the same as the published values. The whole chain took 0.45 s wall time on a DGX
-Spark core and a few seconds on the GitHub runner (both logs are linked below).
+comes out byte for byte the same as the published values. Measured times for the rebuild-and-check:
+0.42 s wall on a DGX Spark (2 cores, from a fresh clone,
+[log](results/drakestapleton-spark-gb10-20261027.log)) and 0.47 s on a GitHub `ubuntu-24.04-arm`
+runner ([run](https://github.com/aien-dev/omega-seed-challenge/actions/runs/40426178383)).
 
 ```
 seed0.hex --load0.sh (POSIX printf)--> seed0 (408 B) --> hex1 (776 B) --> asm2 (2,464 B)
@@ -26,7 +28,6 @@ don't need root or a compiler, and nothing is downloaded after the clone.
 ```sh
 git clone https://github.com/aien-dev/omega-mv
 cd omega-mv
-git fetch origin pull/863/head && git checkout FETCH_HEAD   # only until omega-mv PR #863 merges
 sh seed/challenge/run.sh
 ```
 
@@ -50,7 +51,7 @@ was rebuilt.
 | omc, stages 1-3 | om4, then omc itself, from `seed/omc/omc.om` | 325,524 | `2c82480596bbdc50cda9626866209ef662d5834f278f839ff4ce0250c495029f` |
 
 The full table, including the nine input files, is
-[`seed/challenge/expected.txt`](https://github.com/aien-dev/omega-mv/blob/06191fde568dfdcf9797133b867caed7d6cd3a59/seed/challenge/expected.txt).
+[`seed/challenge/expected.txt`](https://github.com/aien-dev/omega-mv/blob/main/seed/challenge/expected.txt).
 
 ## Watch it pass
 
