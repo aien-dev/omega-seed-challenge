@@ -1,0 +1,74 @@
+name: result check
+# Checks submitted hash logs against the published table (omega-mv seed/challenge/expected.txt at the
+# commit in omega.ref): every results/*.log on pull requests and pushes, and the log pasted into an
+# "I reproduced it" issue, answered with a comment. A log is text anyone can type: this checks that it
+# is complete and that its hashes are the published ones, not that the run happened.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  issues:
+    types: [opened, edited]
+permissions:
+  contents: read
+jobs:
+  logs:
+    if: github.event_name != 'issues'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch the published table
+        run: |
+          set -eu
+          ref=$(awk '$1=="commit"{print $2}' omega.ref)
+          fetch=$(awk '$1=="fetch"{print $2}' omega.ref)
+          git clone --no-checkout https://github.com/aien-dev/omega-mv "$RUNNER_TEMP/omega-mv"
+          cd "$RUNNER_TEMP/omega-mv"
+          [ -z "$fetch" ] || git fetch origin "$fetch"
+          git show "$ref:seed/challenge/expected.txt" > "$RUNNER_TEMP/expected.txt"
+      - name: Check every results/*.log
+        run: |
+          set -u
+          n=0; bad=0
+          for f in results/*.log; do
+            [ -f "$f" ] || continue
+            n=$((n+1))
+            if sh check-result.sh "$RUNNER_TEMP/expected.txt" "$f"; then echo "OK $f"; else echo "REFUSED $f"; bad=$((bad+1)); fi
+          done
+          echo "checked=$n refused=$bad"
+          [ "$bad" = 0 ]
+  issue:
+    if: github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'result')
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the pasted log and reply
+        env:
+          BODY: ${{ github.event.issue.body }}
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          set -u
+          ref=$(awk '$1=="commit"{print $2}' omega.ref)
+          fetch=$(awk '$1=="fetch"{print $2}' omega.ref)
+          git clone -q --no-checkout https://github.com/aien-dev/omega-mv "$RUNNER_TEMP/omega-mv"
+          [ -z "$fetch" ] || git -C "$RUNNER_TEMP/omega-mv" fetch -q origin "$fetch"
+          git -C "$RUNNER_TEMP/omega-mv" show "$ref:seed/challenge/expected.txt" > "$RUNNER_TEMP/expected.txt"
+          # The form renders the log as the first ```text block of the issue body.
+          printf '%s\n' "$BODY" | tr -d '\r' \
+            | awk '/^```text$/ && !s {s=1; next} s && /^```$/ {exit} s {print}' > "$RUNNER_TEMP/issue.log"
+          rc=0
+          sh check-result.sh "$RUNNER_TEMP/expected.txt" "$RUNNER_TEMP/issue.log" > "$RUNNER_TEMP/verdict.txt" 2>&1 || rc=$?
+          cat "$RUNNER_TEMP/verdict.txt"
+          {
+            if [ "$rc" = 0 ]; then echo "Your hash log matches every published value."
+            else echo "Your hash log does not match the published values (or is incomplete):"; fi
+            echo; echo '```'; cat "$RUNNER_TEMP/verdict.txt"; echo '```'; echo
+            echo "Checked by check-result.sh against omega-mv \`$ref:seed/challenge/expected.txt\`. A log is text, so this checks consistency, not that the run happened."
+          } > "$RUNNER_TEMP/comment.md"
+          gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/comment.md"

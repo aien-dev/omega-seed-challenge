@@ -1,0 +1,86 @@
+name: seed-chain challenge
+# Rebuilds omc from the 408-byte seed0 on a GitHub-hosted ubuntu-24.04-arm runner with
+# aien-dev/omega-mv seed/challenge/run.sh, at the omega-mv commit named in omega.ref, then runs two
+# negative controls that must fail: a tampered rung source and a wrong published value.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * 1'
+permissions:
+  contents: read
+jobs:
+  rebuild:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Clone omega-mv at omega.ref
+        run: |
+          set -eu
+          ref=$(awk '$1=="commit"{print $2}' omega.ref)
+          fetch=$(awk '$1=="fetch"{print $2}' omega.ref)
+          git clone --no-checkout https://github.com/aien-dev/omega-mv "$RUNNER_TEMP/omega-mv"
+          cd "$RUNNER_TEMP/omega-mv"
+          [ -z "$fetch" ] || git fetch origin "$fetch"
+          git checkout --detach "$ref"
+          git rev-parse HEAD
+      - name: Challenge (must PASS)
+        run: |
+          set -u
+          cd "$RUNNER_TEMP/omega-mv"
+          uname -srm
+          start=$(date +%s%3N)
+          rc=0; sh seed/challenge/run.sh || rc=$?
+          echo "wall_ms $(( $(date +%s%3N) - start ))"
+          cp build/seed/challenge/challenge.log "$RUNNER_TEMP/challenge.log"
+          { echo '```'; cat build/seed/challenge/challenge.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          [ "$rc" = 0 ] || { echo "challenge exited $rc"; exit 1; }
+          grep -q '^CHALLENGE PASS ' build/seed/challenge/challenge.log
+      - name: The runner's own log passes check-result.sh
+        run: sh check-result.sh "$RUNNER_TEMP/omega-mv/seed/challenge/expected.txt" "$RUNNER_TEMP/challenge.log"
+      - name: Negative control 1, a tampered rung (must FAIL)
+        run: |
+          set -u
+          cd "$RUNNER_TEMP/omega-mv"
+          pin=$(awk '$1=="pin"{print $2}' seed/challenge/expected.txt)
+          t="$RUNNER_TEMP/tampered"; mkdir -p "$t"
+          git archive "$pin" seed/rung0 seed/rung1 seed/rung2 seed/rung3 seed/rung4 seed/omc | tar -x -C "$t"
+          # Change e_ident[8] (ELF ABI version, ignored by Linux) in hex1.hex: hex1 still runs, but its
+          # bytes differ from the published value.
+          sed 's/^00000000\(  # e_ident\[8\.\.11\]\)/00000001\1/' "$t/seed/rung1/hex1.hex" > "$t/hex1.hex"
+          if cmp -s "$t/hex1.hex" "$t/seed/rung1/hex1.hex"; then echo "tamper edit did nothing"; exit 1; fi
+          mv "$t/hex1.hex" "$t/seed/rung1/hex1.hex"
+          git diff --no-index --stat "seed/rung1/hex1.hex" "$t/seed/rung1/hex1.hex" || true
+          rc=0; sh seed/challenge/run.sh --tree "$t" --out "$RUNNER_TEMP/neg1" || rc=$?
+          [ "$rc" = 1 ] || { echo "tampered rung was not caught: rc=$rc"; exit 1; }
+          grep -q '^FAIL input seed/rung1/hex1.hex' "$RUNNER_TEMP/neg1/challenge.log"
+          grep -q '^FAIL rung hex1' "$RUNNER_TEMP/neg1/challenge.log"
+          echo "negative control 1 failed as required (rc=$rc)"
+      - name: Negative control 2, a wrong published omc value (must FAIL)
+        run: |
+          set -u
+          cd "$RUNNER_TEMP/omega-mv"
+          sed 's/^\(rung omc \)2/\13/' seed/challenge/expected.txt > "$RUNNER_TEMP/wrong.txt"
+          if cmp -s seed/challenge/expected.txt "$RUNNER_TEMP/wrong.txt"; then echo "edit did nothing"; exit 1; fi
+          rc=0; sh seed/challenge/run.sh --expect "$RUNNER_TEMP/wrong.txt" --out "$RUNNER_TEMP/neg2" || rc=$?
+          [ "$rc" = 1 ] || { echo "wrong published value was not caught: rc=$rc"; exit 1; }
+          [ "$(grep -c '^stage[123] FAIL rung omc' "$RUNNER_TEMP/neg2/challenge.log")" = 3 ]
+          echo "negative control 2 failed as required (rc=$rc)"
+      - name: Negative control 3, a log with one altered hash is refused by check-result.sh
+        run: |
+          set -u
+          sed 's/^\(PASS rung asm2 \)6/\17/' "$RUNNER_TEMP/challenge.log" > "$RUNNER_TEMP/forged.log"
+          if cmp -s "$RUNNER_TEMP/challenge.log" "$RUNNER_TEMP/forged.log"; then echo "edit did nothing"; exit 1; fi
+          if sh check-result.sh "$RUNNER_TEMP/omega-mv/seed/challenge/expected.txt" "$RUNNER_TEMP/forged.log"; then
+            echo "forged log accepted"; exit 1; fi
+          echo "negative control 3 refused as required"
+      - name: Keep the hash log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: challenge-log
+          path: ${{ runner.temp }}/challenge.log
+          if-no-files-found: ignore

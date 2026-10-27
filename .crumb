@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "name": "omega-seed-challenge",
+  "purpose": "Public runner and result inbox for the Omega seed-chain bootstrap challenge: a GitHub ubuntu-24.04-arm workflow runs aien-dev/omega-mv seed/challenge/run.sh at the commit in omega.ref (rebuild omc from the 408-byte seed0, check every rung against the published table) with tampered-rung, wrong-value and forged-log negative controls; issue form and results/*.log pull requests are checked by check-result.sh.",
+  "layer": "verification",
+  "invariants": [
+    "The workflows and check-result.sh read the published table only from omega-mv seed/challenge/expected.txt at omega.ref; the README copy of the hashes is for reading, never for checking.",
+    "Every negative control must fail; a workflow where a control passes is broken, not green.",
+    "check-result.sh checks a log's consistency with the table, never that the run happened."
+  ]
+}

@@ -1,0 +1,34 @@
+name: I reproduced it
+description: Post your seed-chain challenge run. A workflow checks your hash log against the published values and replies.
+title: "Result: <your machine>"
+labels: [result]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Run `sh seed/challenge/run.sh` in an omega-mv clone (see the README), then paste
+        `build/seed/challenge/challenge.log` below exactly as written. A failed run is welcome too: it
+        is the more interesting report.
+  - type: input
+    id: machine
+    attributes:
+      label: Machine
+      description: Board or CPU, and how you ran it (bare metal, VM, container).
+      placeholder: Raspberry Pi 5, 8 GB, Raspberry Pi OS 64-bit, bare metal
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Hash log
+      description: The whole of build/seed/challenge/challenge.log.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Anything that went differently, timings you measured, questions.
+    validations:
+      required: false

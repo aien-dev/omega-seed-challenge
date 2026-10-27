@@ -1,0 +1,4 @@
+# The aien-dev/omega-mv commit whose seed/challenge/run.sh and expected.txt every workflow here uses.
+# fetch: an extra ref to fetch first (a pull-request head, until the challenge is merged to main).
+commit 06191fde568dfdcf9797133b867caed7d6cd3a59
+fetch pull/863/head
