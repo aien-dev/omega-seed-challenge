@@ -28,7 +28,6 @@ don't need root or a compiler, and nothing is downloaded after the clone.
 ```sh
 git clone https://github.com/aien-dev/omega-mv
 cd omega-mv
-git fetch origin pull/863/head && git checkout FETCH_HEAD   # only until omega-mv PR #863 merges
 sh seed/challenge/run.sh
 ```
 
@@ -52,7 +51,7 @@ was rebuilt.
 | omc, stages 1-3 | om4, then omc itself, from `seed/omc/omc.om` | 325,524 | `2c82480596bbdc50cda9626866209ef662d5834f278f839ff4ce0250c495029f` |
 
 The full table, including the nine input files, is
-[`seed/challenge/expected.txt`](https://github.com/aien-dev/omega-mv/blob/06191fde568dfdcf9797133b867caed7d6cd3a59/seed/challenge/expected.txt).
+[`seed/challenge/expected.txt`](https://github.com/aien-dev/omega-mv/blob/main/seed/challenge/expected.txt).
 
 ## Watch it pass
 
