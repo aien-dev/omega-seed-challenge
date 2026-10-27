@@ -1,8 +1,10 @@
 # The Omega seed-chain bootstrap challenge
 
 Rebuild the Omega compiler from 408 hand-written bytes on your own machine, and check that every rung
-comes out byte for byte the same as the published values. The whole chain took 0.45 s wall time on a DGX
-Spark core and a few seconds on the GitHub runner (both logs are linked below).
+comes out byte for byte the same as the published values. Measured times for the rebuild-and-check:
+0.42 s wall on a DGX Spark (2 cores, from a fresh clone,
+[log](results/drakestapleton-spark-gb10-20261027.log)) and 0.47 s on a GitHub `ubuntu-24.04-arm`
+runner ([run](https://github.com/aien-dev/omega-seed-challenge/actions/runs/40426178383)).
 
 ```
 seed0.hex --load0.sh (POSIX printf)--> seed0 (408 B) --> hex1 (776 B) --> asm2 (2,464 B)
