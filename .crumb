@@ -1,11 +1,25 @@
 {
-  "schema_version": "1.0.0",
-  "name": "omega-seed-challenge",
-  "purpose": "Public runner and result inbox for the Omega seed-chain bootstrap challenge: a GitHub ubuntu-24.04-arm workflow runs aien-dev/omega-mv seed/challenge/run.sh at the commit in omega.ref (rebuild omc from the 408-byte seed0, check every rung against the published table) with tampered-rung, wrong-value and forged-log negative controls; issue form and results/*.log pull requests are checked by check-result.sh.",
-  "layer": "verification",
+  "extensions": {
+    "generated": {
+      "children": [],
+      "children_root": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "compiled_at": "2026-10-28T21:30:12Z",
+      "compiler": "crumb-compile/1",
+      "digest": "sha256:e23c1d84b69244e9c73f44afb4a2536ac5c9f42675d90aff45a5c9ab397f3db6",
+      "evidence_files": 0,
+      "evidence_root": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "files": 9,
+      "generated_at_commit": "8d9e04096d48fc2f1457eaff3f08d42b18176a4b",
+      "source_tree": "sha256:9a269c103e49772ce8046f29928a2ef68e3f9ddc751afe980d053310ed8c9326"
+    }
+  },
   "invariants": [
     "The workflows and check-result.sh read the published table only from omega-mv seed/challenge/expected.txt at omega.ref; the README copy of the hashes is for reading, never for checking.",
     "Every negative control must fail; a workflow where a control passes is broken, not green.",
     "check-result.sh checks a log's consistency with the table, never that the run happened."
-  ]
+  ],
+  "layer": "verification",
+  "name": "omega-seed-challenge",
+  "purpose": "Public runner and result inbox for the Omega seed-chain bootstrap challenge: a GitHub ubuntu-24.04-arm workflow runs aien-dev/omega-mv seed/challenge/run.sh at the commit in omega.ref (rebuild omc from the 408-byte seed0, check every rung against the published table) with tampered-rung, wrong-value and forged-log negative controls; issue form and results/*.log pull requests are checked by check-result.sh.",
+  "schema_version": "1.0.0"
 }
